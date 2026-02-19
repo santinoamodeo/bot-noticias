@@ -4,52 +4,434 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bot de Noticias</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #f4f1eb;
+      --ink: #1a1208;
+      --accent: #c8392b;
+      --muted: #8a7f72;
+      --card-bg: #fff;
+      --border: #d6cfc4;
+      --tag-bg: #1a1208;
+      --tag-color: #f4f1eb;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; }
-    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px 20px; text-align: center; border-bottom: 1px solid #ffffff15; }
-    .header h1 { font-size: 2.5rem; background: linear-gradient(90deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .header p { color: #888; margin-top: 8px; }
-    .search-box { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
-    .search-box input { padding: 14px 20px; border-radius: 30px; border: 1px solid #ffffff20; background: #ffffff10; color: #fff; font-size: 1rem; width: 320px; outline: none; transition: border 0.3s; }
-    .search-box input:focus { border-color: #00d4ff; }
-    .search-box button { padding: 14px 28px; border-radius: 30px; border: none; background: linear-gradient(135deg, #00d4ff, #7b2ff7); color: #fff; font-size: 1rem; cursor: pointer; transition: opacity 0.3s; }
-    .search-box button:hover { opacity: 0.85; }
-    .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
-    .card { background: #1a1a2e; border: 1px solid #ffffff10; border-radius: 16px; padding: 24px; margin-bottom: 20px; transition: transform 0.2s, border-color 0.2s; }
-    .card:hover { transform: translateY(-3px); border-color: #00d4ff40; }
-    .card h2 { font-size: 1.1rem; color: #fff; margin-bottom: 10px; line-height: 1.4; }
-    .card p { color: #aaa; font-size: 0.9rem; line-height: 1.6; margin-bottom: 14px; }
-    .card-footer { display: flex; justify-content: space-between; align-items: center; }
-    .fuente { background: #ffffff10; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: #888; }
-    .leer-mas { color: #00d4ff; text-decoration: none; font-size: 0.85rem; }
-    .leer-mas:hover { text-decoration: underline; }
-    .loading { text-align: center; padding: 60px; color: #888; display: none; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #ffffff10; border-top-color: #00d4ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty { text-align: center; padding: 60px; color: #555; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── NOISE TEXTURE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── MASTHEAD ── */
+    .masthead {
+      border-bottom: 3px solid var(--ink);
+      padding: 16px 40px 0;
+      position: relative;
+    }
+
+    .masthead-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .date-line {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .edition-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .masthead-title {
+      text-align: center;
+      padding-bottom: 16px;
+    }
+
+    .masthead-title h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .masthead-title h1 span {
+      color: var(--accent);
+    }
+
+    .masthead-subtitle {
+      font-size: 0.78rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 6px;
+      font-weight: 400;
+    }
+
+    /* ── SEARCH BAR ── */
+    .search-section {
+      background: var(--ink);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--bg);
+      font-style: italic;
+      white-space: nowrap;
+    }
+
+    .search-inner {
+      display: flex;
+      flex: 1;
+      gap: 0;
+      max-width: 620px;
+    }
+
+    .search-inner input {
+      flex: 1;
+      padding: 13px 20px;
+      border: 2px solid #ffffff30;
+      background: #ffffff10;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      border-right: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-inner input::placeholder { color: #ffffff50; }
+    .search-inner input:focus { border-color: var(--accent); }
+
+    .search-inner button {
+      padding: 13px 28px;
+      background: var(--accent);
+      color: #fff;
+      border: 2px solid var(--accent);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .search-inner button:hover { background: #a82d20; border-color: #a82d20; }
+
+    /* ── MAIN CONTENT ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 40px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 80px 0;
+    }
+
+    .loading-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-style: italic;
+      color: var(--muted);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-header .rule { flex: 1; height: 1px; background: var(--border); }
+    .section-header .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .section-header .count {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    /* ── GRID ── */
+    #resultados {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card-bg);
+      padding: 28px;
+      border: 1px solid var(--border);
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.4s ease both;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      z-index: 2;
+    }
+
+    /* Featured first card */
+    .card:first-child {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      padding: 36px;
+    }
+
+    .card:first-child .card-num {
+      font-size: 4rem;
+    }
+
+    .card:first-child .card-title {
+      font-size: 1.55rem;
+    }
+
+    .card-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 14px;
+      display: block;
+    }
+
+    .card-tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-color);
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.7;
+      flex: 1;
+      margin-bottom: 20px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+
+    .fuente {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .leer-mas {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: gap 0.2s;
+    }
+
+    .leer-mas:hover { gap: 10px; }
+
+    .leer-mas::after {
+      content: '→';
+      font-size: 1rem;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 100px 0;
+    }
+
+    .empty-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 8rem;
+      font-weight: 900;
+      color: var(--border);
+      line-height: 1;
+    }
+
+    .empty-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-style: italic;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* ── INITIAL STATE ── */
+    .initial {
+      text-align: center;
+      padding: 80px 0;
+      border: 1px dashed var(--border);
+    }
+
+    .initial-icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .initial-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .masthead { padding: 16px 20px 0; }
+      .search-section { padding: 16px 20px; }
+      .container { padding: 24px 20px 40px; }
+      .card:first-child { grid-template-columns: 1fr; gap: 0; }
+      .card:first-child .card-num { font-size: 2rem; }
+    }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>📰 Bot de Noticias</h1>
-  <p>Buscá noticias sobre cualquier tema al instante</p>
-  <div class="search-box">
-    <input type="text" id="input-tema" placeholder="Ej: inteligencia artificial, clima, fútbol..." />
+<div class="masthead">
+  <div class="masthead-top">
+    <span class="date-line" id="fecha-hoy"></span>
+    <span class="edition-tag">Edición Digital</span>
+  </div>
+  <div class="masthead-title">
+    <h1>THE <span>NEWS</span> BOT</h1>
+    <p class="masthead-subtitle">Noticias en tiempo real · Buscador inteligente</p>
+  </div>
+</div>
+
+<div class="search-section">
+  <span class="search-label">Buscar tema:</span>
+  <div class="search-inner">
+    <input type="text" id="input-tema" placeholder="Ej: inteligencia artificial, clima, economía..." />
     <button onclick="buscarNoticias()">Buscar</button>
   </div>
 </div>
 
 <div class="container">
   <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p>Buscando noticias...</p>
+    <p class="loading-text">Recopilando noticias...</p>
   </div>
-  <div id="resultados"></div>
+
+  <div id="section-header" style="display:none;" class="section-header">
+    <div class="rule"></div>
+    <span class="label">Resultados para</span>
+    <span class="count" id="tema-label"></span>
+    <div class="rule"></div>
+    <span class="label" id="count-label"></span>
+    <div class="rule"></div>
+  </div>
+
+  <div id="resultados">
+    <div class="initial">
+      <span class="initial-icon">📰</span>
+      <p class="initial-text">Ingresá un tema para comenzar a leer</p>
+    </div>
+  </div>
 </div>
 
 <script>
+  // Fecha en el masthead
+  const now = new Date();
+  document.getElementById('fecha-hoy').textContent = now.toLocaleDateString('es-AR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
   document.getElementById("input-tema").addEventListener("keypress", function(e) {
     if (e.key === "Enter") buscarNoticias();
   });
@@ -60,9 +442,11 @@
 
     const loading = document.getElementById("loading");
     const resultados = document.getElementById("resultados");
+    const sectionHeader = document.getElementById("section-header");
 
     loading.style.display = "block";
     resultados.innerHTML = "";
+    sectionHeader.style.display = "none";
 
     try {
       const res = await fetch(`https://bot-noticias-func.azurewebsites.net/api/obtener-noticias?tema=${encodeURIComponent(tema)}`);
@@ -71,24 +455,42 @@
       loading.style.display = "none";
 
       if (noticias.length === 0) {
-        resultados.innerHTML = '<div class="empty">No se encontraron noticias para ese tema.</div>';
+        resultados.innerHTML = `
+          <div class="empty">
+            <div class="empty-num">0</div>
+            <p class="empty-text">No se encontraron noticias para ese tema.</p>
+          </div>`;
         return;
       }
 
-      noticias.forEach(n => {
+      sectionHeader.style.display = "flex";
+      document.getElementById("tema-label").textContent = `"${tema}"`;
+      document.getElementById("count-label").textContent = `${noticias.length} artículos`;
+
+      noticias.forEach((n, i) => {
+        const delay = i * 60;
         resultados.innerHTML += `
-          <div class="card">
-            <h2>${n.titulo}</h2>
-            <p>${n.descripcion || "Sin descripción disponible."}</p>
+          <div class="card" style="animation-delay:${delay}ms">
+            <div>
+              <span class="card-num">${String(i + 1).padStart(2, '0')}</span>
+              <span class="card-tag">${n.fuente}</span>
+              <h2 class="card-title">${n.titulo}</h2>
+              <p class="card-desc">${n.descripcion || "Sin descripción disponible."}</p>
+            </div>
             <div class="card-footer">
               <span class="fuente">${n.fuente}</span>
-              <a class="leer-mas" href="${n.url}" target="_blank">Leer más →</a>
+              <a class="leer-mas" href="${n.url}" target="_blank">Leer</a>
             </div>
           </div>`;
       });
+
     } catch (err) {
       loading.style.display = "none";
-      resultados.innerHTML = '<div class="empty">Error al conectar con el servidor.</div>';
+      resultados.innerHTML = `
+        <div class="empty">
+          <div class="empty-num">!</div>
+          <p class="empty-text">Error al conectar con el servidor.</p>
+        </div>`;
     }
   }
 </script>
