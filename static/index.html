@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bot de Noticias</title>
+  <title>The News Bot</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -15,6 +15,27 @@
       --border: #d6cfc4;
       --tag-bg: #1a1208;
       --tag-color: #f4f1eb;
+      --search-bg: #1a1208;
+      --cat-bg: #f4f1eb;
+      --cat-border: #d6cfc4;
+      --cat-hover: #1a1208;
+      --cat-hover-color: #f4f1eb;
+    }
+
+    [data-theme="dark"] {
+      --bg: #111018;
+      --ink: #f0ece0;
+      --accent: #e05444;
+      --muted: #7a7568;
+      --card-bg: #1c1b26;
+      --border: #2e2c3a;
+      --tag-bg: #f0ece0;
+      --tag-color: #111018;
+      --search-bg: #0a0a10;
+      --cat-bg: #1c1b26;
+      --cat-border: #2e2c3a;
+      --cat-hover: #f0ece0;
+      --cat-hover-color: #111018;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,30 +45,20 @@
       background: var(--bg);
       color: var(--ink);
       min-height: 100vh;
-    }
-
-    /* ── NOISE TEXTURE OVERLAY ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.4;
+      transition: background 0.3s, color 0.3s;
     }
 
     /* ── MASTHEAD ── */
     .masthead {
       border-bottom: 3px solid var(--ink);
       padding: 16px 40px 0;
-      position: relative;
+      transition: border-color 0.3s;
     }
 
     .masthead-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
       margin-bottom: 12px;
@@ -61,13 +72,47 @@
       font-weight: 500;
     }
 
-    .edition-tag {
+    .masthead-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .fav-toggle {
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--muted);
       font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
     }
+
+    .fav-toggle:hover, .fav-toggle.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--ink);
+      cursor: pointer;
+      padding: 6px 10px;
+      font-size: 1rem;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+
+    .theme-btn:hover { border-color: var(--ink); }
 
     .masthead-title {
       text-align: center;
@@ -81,11 +126,10 @@
       letter-spacing: -0.02em;
       line-height: 1;
       color: var(--ink);
+      transition: color 0.3s;
     }
 
-    .masthead-title h1 span {
-      color: var(--accent);
-    }
+    .masthead-title h1 span { color: var(--accent); }
 
     .masthead-subtitle {
       font-size: 0.78rem;
@@ -98,12 +142,13 @@
 
     /* ── SEARCH BAR ── */
     .search-section {
-      background: var(--ink);
+      background: var(--search-bg);
       padding: 20px 40px;
       display: flex;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
+      transition: background 0.3s;
     }
 
     .search-label {
@@ -117,7 +162,6 @@
     .search-inner {
       display: flex;
       flex: 1;
-      gap: 0;
       max-width: 620px;
     }
 
@@ -154,16 +198,53 @@
 
     .search-inner button:hover { background: #a82d20; border-color: #a82d20; }
 
-    /* ── MAIN CONTENT ── */
+    /* ── CATEGORÍAS ── */
+    .categories {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 40px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .cat-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+
+    .cat-btn {
+      padding: 6px 16px;
+      border: 1px solid var(--cat-border);
+      background: var(--cat-bg);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.03em;
+    }
+
+    .cat-btn:hover, .cat-btn.active {
+      background: var(--cat-hover);
+      color: var(--cat-hover-color);
+      border-color: var(--cat-hover);
+    }
+
+    /* ── MAIN ── */
     .container {
       max-width: 1100px;
       margin: 0 auto;
       padding: 40px 40px 60px;
-      position: relative;
-      z-index: 1;
     }
 
-    /* ── LOADING ── */
     .loading {
       display: none;
       text-align: center;
@@ -180,9 +261,8 @@
 
     @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-    /* ── SECTION HEADER ── */
     .section-header {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 16px;
       margin-bottom: 32px;
@@ -219,7 +299,7 @@
       padding: 28px;
       border: 1px solid var(--border);
       position: relative;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.3s, border-color 0.3s;
       animation: fadeUp 0.4s ease both;
       display: flex;
       flex-direction: column;
@@ -236,7 +316,6 @@
       z-index: 2;
     }
 
-    /* Featured first card */
     .card:first-child {
       grid-column: 1 / -1;
       display: grid;
@@ -245,13 +324,8 @@
       padding: 36px;
     }
 
-    .card:first-child .card-num {
-      font-size: 4rem;
-    }
-
-    .card:first-child .card-title {
-      font-size: 1.55rem;
-    }
+    .card:first-child .card-num { font-size: 4rem; }
+    .card:first-child .card-title { font-size: 1.55rem; }
 
     .card-num {
       font-family: 'Playfair Display', serif;
@@ -299,6 +373,7 @@
       border-top: 1px solid var(--border);
       padding-top: 14px;
       margin-top: auto;
+      gap: 8px;
     }
 
     .fuente {
@@ -307,7 +382,28 @@
       text-transform: uppercase;
       color: var(--muted);
       font-weight: 500;
+      flex: 1;
     }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-fav, .btn-share {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px;
+      line-height: 1;
+      transition: transform 0.15s;
+      color: var(--muted);
+    }
+
+    .btn-fav:hover, .btn-share:hover { transform: scale(1.2); }
+    .btn-fav.saved { color: var(--accent); }
 
     .leer-mas {
       color: var(--accent);
@@ -319,21 +415,43 @@
       align-items: center;
       gap: 6px;
       transition: gap 0.2s;
+      white-space: nowrap;
     }
 
     .leer-mas:hover { gap: 10px; }
+    .leer-mas::after { content: '→'; font-size: 1rem; }
 
-    .leer-mas::after {
-      content: '→';
-      font-size: 1rem;
+    /* ── SHARE POPUP ── */
+    .share-popup {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: var(--bg);
+      padding: 10px 22px;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 100;
+      white-space: nowrap;
     }
 
-    /* ── EMPTY STATE ── */
-    .empty {
+    .share-popup.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── EMPTY / INITIAL ── */
+    .empty, .initial {
       grid-column: 1 / -1;
       text-align: center;
       padding: 100px 0;
     }
+
+    .initial { border: 1px dashed var(--border); }
 
     .empty-num {
       font-family: 'Playfair Display', serif;
@@ -343,19 +461,12 @@
       line-height: 1;
     }
 
-    .empty-text {
+    .empty-text, .initial-text {
       font-family: 'Playfair Display', serif;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-style: italic;
       color: var(--muted);
       margin-top: 8px;
-    }
-
-    /* ── INITIAL STATE ── */
-    .initial {
-      text-align: center;
-      padding: 80px 0;
-      border: 1px dashed var(--border);
     }
 
     .initial-icon {
@@ -365,20 +476,13 @@
       opacity: 0.4;
     }
 
-    .initial-text {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
-      font-style: italic;
-      color: var(--muted);
-    }
-
-    /* ── RESPONSIVE ── */
     @media (max-width: 700px) {
-      .masthead { padding: 16px 20px 0; }
+      .masthead, .categories { padding: 16px 20px 0; }
       .search-section { padding: 16px 20px; }
       .container { padding: 24px 20px 40px; }
       .card:first-child { grid-template-columns: 1fr; gap: 0; }
       .card:first-child .card-num { font-size: 2rem; }
+      .categories { padding: 14px 20px; }
     }
   </style>
 </head>
@@ -387,7 +491,10 @@
 <div class="masthead">
   <div class="masthead-top">
     <span class="date-line" id="fecha-hoy"></span>
-    <span class="edition-tag">Edición Digital</span>
+    <div class="masthead-controls">
+      <button class="fav-toggle" id="fav-toggle-btn" onclick="toggleFavView()">♥ Favoritos (<span id="fav-count">0</span>)</button>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+    </div>
   </div>
   <div class="masthead-title">
     <h1>THE <span>NEWS</span> BOT</h1>
@@ -403,12 +510,23 @@
   </div>
 </div>
 
+<div class="categories">
+  <span class="cat-label">Rápido:</span>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'tecnología')">💻 Tecnología</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'deportes')">⚽ Deportes</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'economía')">📈 Economía</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'política')">🏛️ Política</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'ciencia')">🔬 Ciencia</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'entretenimiento')">🎬 Entretenimiento</button>
+  <button class="cat-btn" onclick="buscarCategoria(this, 'mundo')">🌍 Mundo</button>
+</div>
+
 <div class="container">
   <div class="loading" id="loading">
     <p class="loading-text">Recopilando noticias...</p>
   </div>
 
-  <div id="section-header" style="display:none;" class="section-header">
+  <div class="section-header" id="section-header">
     <div class="rule"></div>
     <span class="label">Resultados para</span>
     <span class="count" id="tema-label"></span>
@@ -420,25 +538,161 @@
   <div id="resultados">
     <div class="initial">
       <span class="initial-icon">📰</span>
-      <p class="initial-text">Ingresá un tema para comenzar a leer</p>
+      <p class="initial-text">Ingresá un tema o elegí una categoría para comenzar</p>
     </div>
   </div>
 </div>
 
+<div class="share-popup" id="share-popup">✓ Link copiado al portapapeles</div>
+
 <script>
-  // Fecha en el masthead
+  // ── FECHA ──
   const now = new Date();
   document.getElementById('fecha-hoy').textContent = now.toLocaleDateString('es-AR', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
+  // ── TEMA OSCURO/CLARO ──
+  let darkMode = localStorage.getItem('theme') === 'dark';
+  applyTheme();
+
+  function toggleTheme() {
+    darkMode = !darkMode;
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    applyTheme();
+  }
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    document.getElementById('theme-btn').textContent = darkMode ? '☀️' : '🌙';
+  }
+
+  // ── FAVORITOS ──
+  let favoritos = JSON.parse(localStorage.getItem('favoritos') || '[]');
+  let viendoFavoritos = false;
+  updateFavCount();
+
+  function updateFavCount() {
+    document.getElementById('fav-count').textContent = favoritos.length;
+  }
+
+  function toggleFav(btn, noticia) {
+    const idx = favoritos.findIndex(f => f.url === noticia.url);
+    if (idx === -1) {
+      favoritos.push(noticia);
+      btn.classList.add('saved');
+      btn.textContent = '♥';
+    } else {
+      favoritos.splice(idx, 1);
+      btn.classList.remove('saved');
+      btn.textContent = '♡';
+    }
+    localStorage.setItem('favoritos', JSON.stringify(favoritos));
+    updateFavCount();
+  }
+
+  function isFav(url) {
+    return favoritos.some(f => f.url === url);
+  }
+
+  function toggleFavView() {
+    viendoFavoritos = !viendoFavoritos;
+    document.getElementById('fav-toggle-btn').classList.toggle('active', viendoFavoritos);
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+
+    if (viendoFavoritos) {
+      mostrarNoticias(favoritos, '❤️ Mis favoritos');
+    } else {
+      document.getElementById('resultados').innerHTML = `
+        <div class="initial">
+          <span class="initial-icon">📰</span>
+          <p class="initial-text">Ingresá un tema o elegí una categoría para comenzar</p>
+        </div>`;
+      document.getElementById('section-header').style.display = 'none';
+    }
+  }
+
+  // ── COMPARTIR ──
+  function compartir(url) {
+    navigator.clipboard.writeText(url).then(() => {
+      const popup = document.getElementById('share-popup');
+      popup.classList.add('show');
+      setTimeout(() => popup.classList.remove('show'), 2500);
+    });
+  }
+
+  // ── CATEGORÍAS ──
+  function buscarCategoria(btn, cat) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('input-tema').value = cat;
+    buscarNoticias();
+  }
+
+  // ── ENTER KEY ──
   document.getElementById("input-tema").addEventListener("keypress", function(e) {
     if (e.key === "Enter") buscarNoticias();
   });
 
+  // ── RENDER ──
+  function mostrarNoticias(noticias, temaLabel) {
+    const resultados = document.getElementById("resultados");
+    const sectionHeader = document.getElementById("section-header");
+
+    if (noticias.length === 0) {
+      resultados.innerHTML = `
+        <div class="empty">
+          <div class="empty-num">0</div>
+          <p class="empty-text">No hay noticias aquí todavía.</p>
+        </div>`;
+      sectionHeader.style.display = 'none';
+      return;
+    }
+
+    sectionHeader.style.display = 'flex';
+    document.getElementById("tema-label").textContent = `"${temaLabel}"`;
+    document.getElementById("count-label").textContent = `${noticias.length} artículos`;
+
+    resultados.innerHTML = '';
+    noticias.forEach((n, i) => {
+      const saved = isFav(n.url);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = `${i * 60}ms`;
+      card.innerHTML = `
+        <div>
+          <span class="card-num">${String(i + 1).padStart(2, '0')}</span>
+          <span class="card-tag">${n.fuente}</span>
+          <h2 class="card-title">${n.titulo}</h2>
+          <p class="card-desc">${n.descripcion || "Sin descripción disponible."}</p>
+        </div>
+        <div class="card-footer">
+          <span class="fuente">${n.fuente}</span>
+          <div class="card-actions">
+            <button class="btn-fav ${saved ? 'saved' : ''}" title="${saved ? 'Quitar de favoritos' : 'Guardar en favoritos'}">${saved ? '♥' : '♡'}</button>
+            <button class="btn-share" title="Copiar link">↗</button>
+            <a class="leer-mas" href="${n.url}" target="_blank">Leer</a>
+          </div>
+        </div>`;
+
+      card.querySelector('.btn-fav').addEventListener('click', function() {
+        toggleFav(this, n);
+      });
+      card.querySelector('.btn-share').addEventListener('click', function() {
+        compartir(n.url);
+      });
+
+      resultados.appendChild(card);
+    });
+  }
+
+  // ── BUSCAR ──
   async function buscarNoticias() {
     const tema = document.getElementById("input-tema").value.trim();
     if (!tema) return;
+
+    viendoFavoritos = false;
+    document.getElementById('fav-toggle-btn').classList.remove('active');
 
     const loading = document.getElementById("loading");
     const resultados = document.getElementById("resultados");
@@ -451,39 +705,8 @@
     try {
       const res = await fetch(`https://bot-noticias-func.azurewebsites.net/api/obtener-noticias?tema=${encodeURIComponent(tema)}`);
       const noticias = await res.json();
-
       loading.style.display = "none";
-
-      if (noticias.length === 0) {
-        resultados.innerHTML = `
-          <div class="empty">
-            <div class="empty-num">0</div>
-            <p class="empty-text">No se encontraron noticias para ese tema.</p>
-          </div>`;
-        return;
-      }
-
-      sectionHeader.style.display = "flex";
-      document.getElementById("tema-label").textContent = `"${tema}"`;
-      document.getElementById("count-label").textContent = `${noticias.length} artículos`;
-
-      noticias.forEach((n, i) => {
-        const delay = i * 60;
-        resultados.innerHTML += `
-          <div class="card" style="animation-delay:${delay}ms">
-            <div>
-              <span class="card-num">${String(i + 1).padStart(2, '0')}</span>
-              <span class="card-tag">${n.fuente}</span>
-              <h2 class="card-title">${n.titulo}</h2>
-              <p class="card-desc">${n.descripcion || "Sin descripción disponible."}</p>
-            </div>
-            <div class="card-footer">
-              <span class="fuente">${n.fuente}</span>
-              <a class="leer-mas" href="${n.url}" target="_blank">Leer</a>
-            </div>
-          </div>`;
-      });
-
+      mostrarNoticias(noticias, tema);
     } catch (err) {
       loading.style.display = "none";
       resultados.innerHTML = `
@@ -494,6 +717,5 @@
     }
   }
 </script>
-
 </body>
 </html>
